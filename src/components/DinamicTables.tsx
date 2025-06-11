@@ -134,6 +134,7 @@ const DynamicTable = ({
             </TableContainer>
             {pagination && (
                 <TablePagination
+                    labelRowsPerPage="Linhas por página "
                     rowsPerPageOptions={[5, 10, 25]}
                     component="div"
                     count={totalRegistros || rows.length}

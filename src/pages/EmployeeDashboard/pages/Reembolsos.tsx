@@ -105,7 +105,7 @@ export function Reembolsos() {
     const actions = [
         {
             icon: <Edit fontSize="small" color='info' />,
-            onClick: (row) => console.log(`Editar ${row.nome}`),
+            onClick: (row) => navigate('/empregado/nova-solicitacao', { state: { id: row.id } }),
             shouldShowAction: () => true,
         },
         {
@@ -143,6 +143,33 @@ export function Reembolsos() {
         }
     };
 
+    function getResumoPedidos(pedidos: ReembolsoRow[]) {
+        if (pedidos.length === 0) {
+            return null;
+        }
+
+        // Pega a competência do primeiro item (ou poderia pegar a mais recente/antiga)
+        const competencia = pedidos[0].competencia;
+
+        // Descobre os limites das datas de envio
+        const datasEnvio = pedidos.map(p => p.dataEnvio);
+        const dataMin = datasEnvio.reduce((min, d) => (new Date(min.split('/').reverse().join('-')) < new Date(d.split('/').reverse().join('-')) ? min : d));
+        const dataMax = datasEnvio.reduce((max, d) => (new Date(max.split('/').reverse().join('-')) > new Date(d.split('/').reverse().join('-')) ? max : d));
+
+        // Conta quantos estão com status "Pendente"
+        const pedidosEmAnalise = pedidos.filter(p => p.status === 'Pendente').length;
+
+        // Retorna formatado para o Alert
+        return {
+            competencia,
+            dataInicio: dataMin,
+            dataFim: dataMax,
+            pedidosEmAnalise,
+        };
+    }
+
+    const resumo = getResumoPedidos(rows);
+
 
     return (
         <Box sx={{ p: 0 }}>
@@ -162,10 +189,12 @@ export function Reembolsos() {
                     </Button>
                 </Stack>
 
-                <Alert severity="info" sx={{ mb: 2 }}>
-                    Envios para <strong>Maio/2025</strong>: de <strong>01/05/2025</strong> a{' '}
-                    <strong>05/06/2025</strong>. Você pode ter até <strong>2 pedidos</strong> em análise.
-                </Alert>
+                {resumo && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                        Envios para <strong>{resumo.competencia}</strong> de <strong>{resumo.dataInicio}</strong> a{' '}
+                        <strong>{resumo.dataFim}</strong>. Você pode ter até <strong>{resumo.pedidosEmAnalise} pedidos</strong> em análise.
+                    </Alert>
+                )}
 
                 <DynamicTable
                     rows={paginatedRows}
@@ -176,7 +205,7 @@ export function Reembolsos() {
                     handleChangePage={handleChangePage}
                     handleChangeRowsPerPage={handleChangeRowsPerPage}
                     totalRegistros={rows.length}
-                    pagination={false}
+                    pagination={true}
                     loading={loading}
                     noRecordsToDisplay={"Nenhum reembolso foi encontrado"}
                 />

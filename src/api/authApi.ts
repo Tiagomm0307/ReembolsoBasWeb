@@ -10,6 +10,7 @@ interface LoginResponse {
     perfil: string;
     matricula: string;
     nome: string;
+    id: number;
     diretoria: string;
     superintendencia: string;
 }
@@ -27,12 +28,15 @@ interface EmpregadoResponse {
 
 export const authApi = {
     login: async (data: LoginRequest): Promise<LoginResponse> => {
-        // Primeira chamada: login
+        // 1. Faz o login
         const response = await apiClient.post<LoginResponse>('/Auth/login', data);
         const loginData = response.data;
 
-        // Segunda chamada: buscar dados do empregado (por enquanto fixo: id = 3)
-        const empregadoResp = await apiClient.get<EmpregadoResponse>('/Empregados/4');
+        // 2. Salva o token imediatamente
+        sessionStorage.setItem('token', loginData.token);
+
+        // 3. Agora pode chamar os outros endpoints que precisam do token
+        const empregadoResp = await apiClient.get<EmpregadoResponse>(`/Empregados/${loginData.id}`);
         const empregado = empregadoResp.data;
 
         return {
@@ -42,3 +46,4 @@ export const authApi = {
         };
     },
 };
+

@@ -1,18 +1,15 @@
 // src/api/reembolsoApi.ts
 
+import { Reembolso } from 'types/reembolso';
 import apiClient from './client';
-
-export interface Reembolso {
-    Id: number;
-    NumeroRegistro: number;
-    Periodo: string;
-    ValorSolicitado: number;
-    Status: string;
-    DataEnvio: string;
-    // outros campos que você tiver na API
-}
+import { ReembolsoDetalhado } from 'types/reembolsoDetalhado';
 
 const endpoint = "/Reembolsos"
+
+const listarById = async (id: number): Promise<ReembolsoDetalhado> => {
+    const response = await apiClient.get<ReembolsoDetalhado>(`${endpoint}/meus?id=${id}`);
+    return response.data;
+};
 
 const listar = async (): Promise<Reembolso[]> => {
     const response = await apiClient.get<Reembolso[]>(`${endpoint}/meus`);
@@ -43,9 +40,26 @@ const solicitarReembolso = async (formData: FormData): Promise<boolean> => {
     return true;
 };
 
+/**
+ * Atualiza uma solicitação de reembolso existente.
+ * @param id - ID do reembolso a ser atualizado.
+ * @param formData - FormData com os dados da solicitação.
+ * @returns true se a atualização for bem-sucedida.
+ */
+const atualizarReembolso = async (id: number, formData: FormData): Promise<boolean> => {
+    await apiClient.put(`${endpoint}/${id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return true;
+};
+
 export const reembolsoApi = {
     listar,
+    listarById,
     editar,
     excluir,
     solicitarReembolso,
+    atualizarReembolso
 };

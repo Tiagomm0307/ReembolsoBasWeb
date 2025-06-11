@@ -25,6 +25,8 @@ import { useSnackbar } from 'contexts/SnackbarContext';
 import { reembolsoApi } from 'api/reembolsoApi';
 import { handleApiError } from 'utils/handleApiError';
 import CustomModal from 'components/CustomModal';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface Lancamento {
     id: number;
@@ -41,6 +43,14 @@ interface FormValues {
     [key: string]: string | number;
 }
 
+function formatPeriodo(periodo: string) {
+    if (!periodo) return '';
+    const d = new Date(periodo);
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const ano = d.getFullYear();
+    return `${mes}/${ano}`;
+}
+
 export const NovaSolicitacao = () => {
     const { handleSubmit, control, watch, reset } = useForm<FormValues>();
     const { showError } = useSnackbar();
@@ -49,10 +59,16 @@ export const NovaSolicitacao = () => {
     const [lancamentos, setLancamentos] = useState<Lancamento[]>([
         { id: 1, beneficiario: '', tipo: '', data: '', valor: '0,00' },
     ]);
-    const [uploadedFiles, setUploadedFiles] = useState([]);
+    const [uploadedFiles, setUploadedFiles] = useState<(File | string)[]>([]);
     const [mostrarUpload, setMostrarUpload] = useState(false);
     const [openModalSucesso, setOpenModalSucesso] = useState(false);
     const [resetKey, setResetKey] = useState(0);
+
+    const navigate = useNavigate();
+
+    const location = useLocation();
+    const id = location.state?.id;
+    const isEditMode = Boolean(id);
 
     const nome = authService.getNome();
     const matriculaRaw = authService.getMatricula();      // string | null
@@ -96,7 +112,6 @@ export const NovaSolicitacao = () => {
 
     const handleNovaSolicitacao = () => {
         setOpenModalSucesso(false);
-
     };
 
     useEffect(() => {
@@ -202,17 +217,69 @@ export const NovaSolicitacao = () => {
         });
 
         try {
-            await reembolsoApi.solicitarReembolso(formData);
+            if (isEditMode) {
+                // Chama endpoint de edição
+                await reembolsoApi.atualizarReembolso(id, formData);
+            } else {
+                // Chama endpoint de cadastro
+                await reembolsoApi.solicitarReembolso(formData);
+            }
             setOpenModalSucesso(true);
         } catch (err: unknown) {
             handleApiError(err, showError);
         }
     };
 
+    useEffect(() => {
+        if (!isEditMode || !id) return;
+
+        const fetchReembolso = async () => {
+            try {
+                const dados = await reembolsoApi.listarById(id);  // retorna ReembolsoDetalhado
+
+                // Prepara o objeto de reset
+                const initialData: Partial<FormValues> = {
+                    periodoSolicitacao: formatPeriodo(dados.Periodo),
+                    tipoSolicitacao: dados.TipoSolicitacao,
+                };
+
+                // Campos dinâmicos
+                const novosLancamentos: Lancamento[] = dados.Lancamentos.map(lanc => ({
+                    id: lanc.Id,
+                    beneficiario: lanc.Beneficiario,
+                    tipo: lanc.GrauParentesco.toString(),
+                    data: new Date(lanc.DataPagamento).toLocaleDateString('pt-BR'),
+                    valor: lanc.ValorPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                }));
+
+                // Popula os campos dinâmicos no reset
+                dados.Lancamentos.forEach(lanc => {
+                    initialData[`beneficiario_${lanc.Id}`] = lanc.Beneficiario;
+                    initialData[`tipo_${lanc.Id}`] = lanc.GrauParentesco;
+                    initialData[`data_${lanc.Id}`] = new Date(lanc.DataPagamento).toLocaleDateString('pt-BR');
+                    initialData[`valor_${lanc.Id}`] = lanc.ValorPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                });
+
+                // Executa o reset uma única vez
+                reset(initialData);
+                setLancamentos(novosLancamentos);
+
+                if (dados.CaminhoDocumentos) {
+                    setUploadedFiles([dados.CaminhoDocumentos]);
+                }
+            } catch (err: unknown) {
+                handleApiError(err, showError);
+            }
+        };
+
+        fetchReembolso();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEditMode, id]);  // <-- só depende de isEditMode e id
+
     return (
         <Paper sx={{ p: 3 }}>
             <Typography variant="h5" mb={2}>
-                Nova Solicitação de Reembolso
+                {isEditMode ? 'Editar Solicitação de Reembolso' : 'Nova Solicitação de Reembolso'}
             </Typography>
 
             <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
@@ -343,9 +410,13 @@ export const NovaSolicitacao = () => {
                 />
                 <Divider sx={{ marginTop: 2 }} />
                 <Stack direction="row" justifyContent="flex-end" spacing={2} mt={3}>
-                    <Button variant="outlined">Cancelar</Button>
+                    {isEditMode &&
+                        <Button variant="outlined" onClick={() => navigate('/empregado/meus-reembolsos')}>
+                            Cancelar
+                        </Button>
+                    }
                     <Button variant="contained" type="submit" disabled={!aceite}>
-                        Enviar Solicitação
+                        {isEditMode ? 'Salvar Alterações' : 'Enviar Solicitação'}
                     </Button>
                 </Stack>
             </form>
@@ -353,7 +424,7 @@ export const NovaSolicitacao = () => {
             <CustomModal
                 open={openModalSucesso}
                 onClose={() => setOpenModalSucesso(false)}
-                title="Solicitação de Reembolso"
+                title={isEditMode ? 'Alteração de Reembolso' : "Solicitação de Reembolso"}
                 subtitle="Meus Reembolsos"
                 icon={<PostAdd />}
                 loading={false}
@@ -372,7 +443,8 @@ export const NovaSolicitacao = () => {
                 >
                     <CheckCircle sx={{ fontSize: 50, color: 'green', mb: 1 }} />
                     <Typography variant="h6" fontWeight="bold" color="success.main" gutterBottom>
-                        Solicitação enviada com sucesso!
+                        {isEditMode ? 'Alteração realizada com sucesso!' : "Solicitação enviada com sucesso!"}
+
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                         Você poderá acompanhar o andamento em "Meus Reembolsos".
@@ -380,13 +452,23 @@ export const NovaSolicitacao = () => {
                 </Paper>
 
                 <Stack direction="row" spacing={2} justifyContent="center" mt={2}>
+                    {!isEditMode &&
+                        <Button
+                            variant="contained"
+                            color="success"
+                            startIcon={<Add />}
+                            onClick={handleNovaSolicitacao}
+                        >
+                            Nova Solicitação
+                        </Button>
+                    }
                     <Button
                         variant="contained"
-                        color="success"
-                        startIcon={<Add />}
-                        onClick={handleNovaSolicitacao}
+                        color="info"
+                        startIcon={<ReceiptIcon />}
+                        onClick={() => navigate('/empregado/meus-reembolsos')}
                     >
-                        Nova Solicitação
+                        Meus Reembolsos
                     </Button>
                 </Stack>
 
