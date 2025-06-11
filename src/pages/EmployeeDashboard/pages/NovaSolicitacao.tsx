@@ -266,9 +266,6 @@ export const NovaSolicitacao = () => {
                                             alignItems: 'center',
                                             justifyContent: 'end',
                                             pr: 2,
-                                            '&:hover': {
-                                                bgcolor: 'primary.dark',
-                                            },
                                         }}
                                     >
                                         <Typography>

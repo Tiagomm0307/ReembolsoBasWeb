@@ -239,16 +239,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                         >
-                            {userMenuItems.map((item, idx) => (
-                                <React.Fragment key={idx}>
-                                    <MenuItem onClick={handleUserMenuClose} sx={{ py: 1.2 }}>
-                                        <Stack direction="row" alignItems="center" spacing={1.5}>
-                                            {item.icon}
-                                            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-                                            <Typography variant="inherit">{item.label}</Typography>
-                                        </Stack>
-                                    </MenuItem>
-                                </React.Fragment>
+                            {userMenuItems.map((item) => (
+                                <MenuItem onClick={handleUserMenuClose} sx={{ py: 1.2 }}>
+                                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                                        {item.icon}
+                                        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+                                        <Typography variant="inherit">{item.label}</Typography>
+                                    </Stack>
+                                </MenuItem>
                             ))}
                         </Menu>
                     </Box>
