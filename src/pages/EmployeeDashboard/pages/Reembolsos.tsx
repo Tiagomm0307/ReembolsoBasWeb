@@ -39,7 +39,7 @@ const columns = [
             <Chip
                 label={value}
                 color={row.statusColor}
-                variant="outlined"
+                variant="filled"
                 sx={{ maxWidth: 300 }}
             />
         ),

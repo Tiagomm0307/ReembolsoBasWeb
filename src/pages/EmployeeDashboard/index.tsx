@@ -8,8 +8,6 @@ import PostAddIcon from '@mui/icons-material/PostAdd';
 import PlagiarismIcon from '@mui/icons-material/Plagiarism';
 import { Reembolsos } from './pages/Reembolsos';
 import { NovaSolicitacao } from './pages/NovaSolicitacao';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import PoliticaBas from './pages/PolíticaBas';
 import { WelcomeScreen, type MotivationalMessage, type QuickAction, type WelcomeCard } from '../../components/Layout/WelcomeScreen';
 import { HealthAndSafety, Notifications, Schedule, TrendingUp } from '@mui/icons-material';
@@ -19,9 +17,7 @@ const EmployeeDashboard: React.FC = () => {
 
     const navigate = useNavigate();
 
-    // const token = authService.getToken();
     const perfil = authService.getPerfil();
-    // const matricula = authService.getMatricula();
     const nome = authService.getNome();
 
     const menuItems = [
@@ -100,11 +96,7 @@ const EmployeeDashboard: React.FC = () => {
                 }
                 />
                 <Route path="meus-reembolsos" element={<Reembolsos />} />
-                <Route path="nova-solicitacao" element={
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <NovaSolicitacao />
-                    </LocalizationProvider>
-                } />
+                <Route path="nova-solicitacao" element={<NovaSolicitacao />} />
                 <Route path="politica-bas" element={<PoliticaBas />} />
             </Routes>
         </DashboardLayout>

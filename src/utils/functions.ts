@@ -18,6 +18,12 @@ export class Functions {
         }
     }
 
+    static mapStatusEmpregadoToColor(status) {
+        if (status === true) return 'success';
+        if (status === false) return 'error';
+        return 'default';
+    }
+
     // Função para converter texto para camelCase
     static convertCamelCase = (str: string) => {
         const cleanStr = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z\s]/g, '');

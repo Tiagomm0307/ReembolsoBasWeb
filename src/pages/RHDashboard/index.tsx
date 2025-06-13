@@ -11,9 +11,13 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import { CadastroEmpregados } from './pages/CadastroEmpregados';
 import { ValidarReembolsos } from './pages/ValidarReembolsos';
+import { authService } from 'service/authService';
 
 const RHDashboard: React.FC = () => {
     const navigate = useNavigate();
+
+    const perfil = authService.getPerfil();
+    const nome = authService.getNome();
 
     const menuItems = [
         { label: 'Início', path: '/rh', icon: <HomeIcon /> },
@@ -74,8 +78,8 @@ const RHDashboard: React.FC = () => {
             <Routes>
                 <Route index element={
                     <WelcomeScreen
-                        userName={"Francisco de Assis"}
-                        userRole={"RH"}
+                        userName={nome}
+                        userRole={perfil}
                         systemName="sistema BAS Saúde"
                         cards={healthCards}
                         quickActions={healthActions}

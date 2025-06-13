@@ -71,13 +71,10 @@ const DynamicTable = ({
                                                                 key={actionIndex}
                                                                 checked={action.checked ? action.checked(row) : false}
                                                                 onChange={(e, checked) => action.onChange(row, checked)}
+                                                                // não use onChange, senão o MUI altera o estado visual antes do seu modal
                                                                 color={action.color || 'primary'}
                                                                 size="small"
-                                                                slotProps={{
-                                                                    input: {
-                                                                        'aria-label': action.label || 'switch-action'
-                                                                    }
-                                                                }}
+                                                                slotProps={{ input: { 'aria-label': action.label || 'switch-action' } }}
                                                             />
                                                         ) : action.isTextOnly ? (
                                                             <Typography
