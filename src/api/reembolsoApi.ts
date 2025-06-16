@@ -3,6 +3,7 @@
 import { Reembolso } from 'types/reembolso';
 import apiClient from './client';
 import { ReembolsoDetalhado } from 'types/reembolsoDetalhado';
+import { ReembolsoPendentes } from 'types/reembolsoPendentes';
 
 const endpoint = "/Reembolsos"
 
@@ -13,6 +14,11 @@ const listarById = async (id: number): Promise<ReembolsoDetalhado> => {
 
 const listar = async (): Promise<Reembolso[]> => {
     const response = await apiClient.get<Reembolso[]>(`${endpoint}/meus`);
+    return response.data;
+};
+
+const listarTodos = async (): Promise<ReembolsoPendentes[]> => {
+    const response = await apiClient.get<ReembolsoPendentes[]>(`${endpoint}/todos`);
     return response.data;
 };
 
@@ -57,6 +63,7 @@ const atualizarReembolso = async (id: number, formData: FormData): Promise<boole
 
 export const reembolsoApi = {
     listar,
+    listarTodos,
     listarById,
     editar,
     excluir,

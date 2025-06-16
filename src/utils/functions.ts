@@ -1,22 +1,5 @@
 export class Functions {
 
-    static mapStatusReembolsoToColor(status) {
-        if (!status) return 'default';
-
-        switch (status.toLowerCase()) {
-            case 'pendente':
-                return 'warning';
-            case 'aprovado':
-                return 'success';
-            case 'reprovado':
-            case 'reprovado – aguardando correção':
-                return 'error';
-            case 'devolvido pelo gerente – aguardando correção':
-                return 'warning';
-            default:
-                return 'default';
-        }
-    }
 
     static mapStatusEmpregadoToColor(status) {
         if (status === true) return 'success';

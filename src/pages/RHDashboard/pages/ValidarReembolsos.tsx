@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Box,
     Checkbox,
@@ -7,42 +7,67 @@ import {
     Stack,
     Typography,
     Alert,
+    Tabs,
+    Tab,
+    AppBar,
+    Button,
+    Divider,
 } from '@mui/material';
 import { CheckCircle, Cancel, FolderOpen } from '@mui/icons-material';
 import DynamicTable from '../../../components/DinamicTables';
-
-export interface ValidaReembolsoProps {
-    numero: string;
-    empregado: string;
-    valor: string;
-    dataEnvio: string;
-    status: string;
-}
+import { reembolsoApi } from 'api/reembolsoApi';
+import dayjs from 'dayjs';
+import { useSnackbar } from 'contexts/SnackbarContext';
+import { ReembolsoPendentesRow } from 'types/reembolsoPendentesRow';
+import CustomModal from 'components/CustomModal';
+import { TabsDadosEmpregado } from './components/TabsDadosEmpregado';
+import { TabsDocumentosAnexados } from './components/TabsDocumentosAnexados';
 
 export function ValidarReembolsos() {
     const [selectAll, setSelectAll] = useState(false);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [rows, setRows] = useState<ReembolsoPendentesRow[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [fetchTrigger, setFetchTrigger] = useState(true);
+    const [openModal, setOpenModal] = useState(false);         // Controle de abertura
+    const [modalType, setModalType] = useState<'validar' | 'reprovar' | 'abrir' | null>(null); // Tipo de modal
+    const [selectedRow, setSelectedRow] = useState<ReembolsoPendentesRow | null>(null); // Registro selecionado
+    const [tabIndex, setTabIndex] = useState(0);
 
-    const handleValidar = (row: ValidaReembolsoProps) => {
-        alert(`Validado ${row.empregado}`);
+    const { showError } = useSnackbar();
+
+    const paginatedRows = rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+    const handleValidar = (row: ReembolsoPendentesRow) => {
+        setSelectedRow(row);
+        setModalType('validar');
+        setOpenModal(true);
     };
 
-    const handleReprovar = (row: ValidaReembolsoProps) => {
-        alert(`Reprovado ${row.empregado}`);
+    const handleReprovar = (row: ReembolsoPendentesRow) => {
+        setSelectedRow(row);
+        setModalType('reprovar');
+        setOpenModal(true);
     };
 
-    const handleAbrir = (row: ValidaReembolsoProps) => {
-        alert(`Abrir documentos de ${row.empregado}`);
+    const handleAbrir = (row: ReembolsoPendentesRow) => {
+        setSelectedRow(row);
+        setModalType('abrir');
+        setOpenModal(true);
+    };
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTabIndex(newValue);
     };
 
     const columns = [
-        { key: 'numero', label: 'Nº' },
-        { key: 'empregado', label: 'EMPREGADO' },
-        { key: 'valor', label: 'VALOR SOLIC.' },
-        { key: 'dataEnvio', label: 'DATA ENVIO' },
+        { key: 'NumeroRegistro', label: 'Nº' },
+        { key: 'Solicitante', label: 'EMPREGADO' },
+        { key: 'ValorSolicitado', label: 'VALOR SOLIC.' },
+        { key: 'DataEnvio', label: 'DATA ENVIO' },
         {
-            key: 'status',
+            key: 'Status',
             label: 'STATUS',
             render: (value: string) => {
                 const statusMap: { [key: string]: { color: 'warning' | 'info' | 'default' | 'error' | 'success' } } = {
@@ -56,48 +81,10 @@ export function ValidarReembolsos() {
                     <Chip
                         label={value}
                         color={statusMap[value]?.color || 'default'}
-                        variant="outlined"
+                        variant="filled"
                     />
                 );
             },
-        },
-    ];
-
-    const rows: ValidaReembolsoProps[] = [
-        {
-            numero: 'R00123',
-            empregado: 'Carlos Pereira',
-            valor: 'R$ 450,00',
-            dataEnvio: '02/06/2025',
-            status: 'Pendente',
-        },
-        {
-            numero: 'R00124',
-            empregado: 'Mariana Lima',
-            valor: 'R$ 1.500,00',
-            dataEnvio: '03/06/2025',
-            status: 'Validado pelo RH',
-        },
-        {
-            numero: 'R00125',
-            empregado: 'Julio Alves',
-            valor: 'R$ 950,00',
-            dataEnvio: '01/06/2025',
-            status: 'Recusado por Prazo',
-        },
-        {
-            numero: 'R00126',
-            empregado: 'Sofia Mendes',
-            valor: 'R$ 300,00',
-            dataEnvio: '28/05/2025',
-            status: 'Devolvido (Corrigido)',
-        },
-        {
-            numero: 'R00127',
-            empregado: 'Pedro Antunes',
-            valor: 'R$ 700,00',
-            dataEnvio: '04/06/2025',
-            status: 'Aprovado',
         },
     ];
 
@@ -107,7 +94,7 @@ export function ValidarReembolsos() {
             icon: <FolderOpen />,
             label: '',
             color: 'primary' as const,
-            onClick: (row: ValidaReembolsoProps) => handleAbrir(row),
+            onClick: (row: ReembolsoPendentesRow) => handleAbrir(row),
             shouldShowAction: () => true, // Sempre mostrar
             showLabel: true,
         },
@@ -115,34 +102,34 @@ export function ValidarReembolsos() {
             icon: <CheckCircle />,
             label: 'Validar',
             color: 'success' as const,
-            onClick: (row: ValidaReembolsoProps) => handleValidar(row),
-            shouldShowAction: (row: ValidaReembolsoProps) =>
-                ['Pendente', 'Recusado por Prazo', 'Devolvido (Corrigido)'].includes(row.status),
+            onClick: (row: ReembolsoPendentesRow) => handleValidar(row),
+            shouldShowAction: (row: ReembolsoPendentesRow) =>
+                ['Pendente', 'Recusado por Prazo', 'Devolvido (Corrigido)'].includes(row.Status),
             showLabel: true,
         },
         {
             icon: <Cancel />,
             label: 'Reprovar',
             color: 'error' as const,
-            onClick: (row: ValidaReembolsoProps) => handleReprovar(row),
-            shouldShowAction: (row: ValidaReembolsoProps) =>
-                ['Pendente', 'Recusado por Prazo', 'Devolvido (Corrigido)'].includes(row.status),
+            onClick: (row: ReembolsoPendentesRow) => handleReprovar(row),
+            shouldShowAction: (row: ReembolsoPendentesRow) =>
+                ['Pendente', 'Recusado por Prazo', 'Devolvido (Corrigido)'].includes(row.Status),
             showLabel: true,
         },
         // Texto informativo baseado no status
         {
-            label: (row: ValidaReembolsoProps) => {
-                if (row.status === 'Validado pelo RH') return 'Aguardando Gerente';
-                if (row.status === 'Aprovado') return 'Aprovado';
+            label: (row: ReembolsoPendentesRow) => {
+                if (row.Status === 'Validado pelo RH') return 'Aguardando Gerente';
+                if (row.Status === 'Aprovado') return 'Aprovado';
                 return '';
             },
-            color: (row: ValidaReembolsoProps) => {
-                if (row.status === 'Validado pelo RH') return 'warning' as const;
-                if (row.status === 'Aprovado') return 'success' as const;
+            color: (row: ReembolsoPendentesRow) => {
+                if (row.Status === 'Validado pelo RH') return 'warning' as const;
+                if (row.Status === 'Aprovado') return 'success' as const;
                 return 'default' as const;
             },
-            shouldShowAction: (row: ValidaReembolsoProps) =>
-                ['Validado pelo RH', 'Aprovado'].includes(row.status),
+            shouldShowAction: (row: ReembolsoPendentesRow) =>
+                ['Validado pelo RH', 'Aprovado'].includes(row.Status),
             showLabel: true,
             isTextOnly: true, // Flag para identificar que é apenas texto
         },
@@ -155,7 +142,145 @@ export function ValidarReembolsos() {
         setPage(0);
     };
 
-    const paginatedRows = rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const fetchReembolsos = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await reembolsoApi.listarTodos();
+            const mappedRows: ReembolsoPendentesRow[] = response.map((item) => ({
+                Id: item.Id,
+                NumeroRegistro: item.NumeroRegistro,
+                TipoSolicitacao: item.TipoSolicitacao, // não esquecer esse campo!
+                Status: item.Status,
+                DataEnvio: dayjs(item.DataEnvio).format('DD/MM/YYYY'),
+                Solicitante: item.Solicitante ?? '',
+                ValorSolicitado: Number(item.ValorSolicitado),
+                acoes: true,
+            }));
+            setRows(mappedRows);
+        } catch (err) {
+            if (err instanceof Error) {
+                showError(err.message);
+            } else {
+                showError("Erro desconhecido");
+            }
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    }, [showError]);
+
+    useEffect(() => {
+        if (fetchTrigger) {
+            fetchReembolsos();
+            setFetchTrigger(false);
+        }
+    }, [fetchTrigger, fetchReembolsos]);
+
+
+    function renderModalContent() {
+        if (!selectedRow) return null;
+
+        switch (modalType) {
+            case 'validar':
+                return (
+                    <>
+                        <Box display="flex" justifyContent="center" gap={2} m={3}>
+                            <Typography variant='h6' fontWeight={"bold"}>
+                                {`Deseja validar o reembolso ${selectedRow.NumeroRegistro} no valor de R$ ${selectedRow.ValorSolicitado.toFixed(2).replace('.', ',')}?`}
+                            </Typography>
+
+                        </Box>
+                        <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
+                            <Button
+                                variant="contained"
+                                color="inherit"
+                                onClick={() => setOpenModal(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="info"
+                                onClick={() => setOpenModal(false)}
+                            >
+                                Sim, Validar
+                            </Button>
+                        </Box>
+                    </>
+                );
+            case 'reprovar':
+                return (
+                    <>
+                        <Box display="flex" justifyContent="center" gap={2} m={3}>
+                            <Typography variant='h6' fontWeight={"bold"}>
+                                {`Deseja validar o reembolso ${selectedRow.NumeroRegistro} no valor de R$ ${selectedRow.ValorSolicitado.toFixed(2).replace('.', ',')}?`}
+                            </Typography>
+
+                        </Box>
+                        <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
+                            <Button
+                                variant="contained"
+                                color="inherit"
+                                onClick={() => setOpenModal(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="error"
+                                onClick={() => setOpenModal(false)}
+                            >
+                                Enviar Reprovação
+                            </Button>
+                        </Box>
+                    </>
+                );
+            case 'abrir':
+                return (
+                    <>
+                        <AppBar position="static" sx={{ mt: 2 }}>
+                            <Tabs
+                                value={tabIndex}
+                                onChange={handleTabChange}
+                                indicatorColor="secondary"
+                                textColor="inherit"
+                                variant="fullWidth"
+                                aria-label="full width tabs example"
+                            >
+                                <Tab label="Dados do Empregado" />
+                                <Tab label="Documentos Anexados" />
+                            </Tabs>
+                        </AppBar>
+                        <Box sx={{ p: 1 }}>
+                            {tabIndex === 0 && <TabsDadosEmpregado row={selectedRow} />}
+                            {tabIndex === 1 && <TabsDocumentosAnexados />}
+                        </Box>
+                        <Divider />
+                        <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
+                            <Button
+                                variant="contained"
+                                color="inherit"
+                                onClick={() => setOpenModal(false)}
+                            >
+                                Fechar
+                            </Button>
+
+                        </Box>
+                    </>
+                );
+            default:
+                return null;
+        }
+    }
+
+    function getModalTitle() {
+        if (!selectedRow) return '';
+        if (modalType === 'validar') return `Validar - Reembolso ${selectedRow.NumeroRegistro}`;
+        if (modalType === 'reprovar') return `Reprovar - Reembolso ${selectedRow.NumeroRegistro}`;
+        if (modalType === 'abrir') return `Analisar Documentos - Reembolso ${selectedRow.NumeroRegistro}`;
+        return '';
+    }
+
 
     return (
         <Box sx={{ p: 0 }}>
@@ -187,12 +312,29 @@ export function ValidarReembolsos() {
                     handleChangePage={handleChangePage}
                     handleChangeRowsPerPage={handleChangeRowsPerPage}
                     totalRegistros={rows.length}
-                    pagination={false}
-                    loading={false}
-                    noRecordsToDisplay="Nenhum reembolso encontrado"
+                    pagination={true}
+                    loading={loading}
+                    noRecordsToDisplay={"Nenhum reembolso foi encontrado"}
                 />
 
             </Paper>
+            <CustomModal
+                open={openModal}
+                onClose={() => setOpenModal(false)}
+                title={getModalTitle()}
+                subtitle="Analisar/Validar Reembolso"
+                icon={
+                    modalType === 'validar' ? <CheckCircle color="success" />
+                        : modalType === 'reprovar' ? <Cancel color="error" />
+                            : modalType === 'abrir' ? <FolderOpen color="primary" />
+                                : null
+                }
+                loading={false}
+                maxWidth="md"
+            >
+                {renderModalContent()}
+            </CustomModal>
+
         </Box>
     );
 }

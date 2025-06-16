@@ -12,21 +12,10 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import DynamicTable from '../../../components/DinamicTables';
 import { reembolsoApi } from 'api/reembolsoApi';
-import { Functions } from 'utils/functions';
 import dayjs from 'dayjs';
 import { useSnackbar } from 'contexts/SnackbarContext';
 import CustomModal from 'components/CustomModal';
-
-interface ReembolsoRow {
-    id: number;
-    numero: number;
-    competencia: string;
-    valor: string;
-    status: string;
-    statusColor: string;
-    dataEnvio: string;
-    acoes: boolean;
-}
+import { ReembolsoRow } from 'types/reembolsoRow';
 
 const columns = [
     { key: 'numero', label: 'Nº Reemb.' },
@@ -35,14 +24,22 @@ const columns = [
     {
         key: 'status',
         label: 'Status',
-        render: (value, row) => (
-            <Chip
-                label={value}
-                color={row.statusColor}
-                variant="filled"
-                sx={{ maxWidth: 300 }}
-            />
-        ),
+        render: (value: string) => {
+            const statusMap: { [key: string]: { color: 'warning' | 'info' | 'default' | 'error' | 'success' } } = {
+                'Pendente': { color: 'warning' },
+                'Validado pelo RH': { color: 'info' },
+                'Recusado por Prazo': { color: 'default' },
+                'Devolvido (Corrigido)': { color: 'error' },
+                'Aprovado': { color: 'success' },
+            };
+            return (
+                <Chip
+                    label={value}
+                    color={statusMap[value]?.color || 'default'}
+                    variant="filled"
+                />
+            );
+        },
     },
     { key: 'dataEnvio', label: 'Data Envio' },
 ];
@@ -78,7 +75,6 @@ export function Reembolsos() {
                 competencia: dayjs(item.Periodo).format('MM/YYYY'),
                 valor: `R$ ${item.ValorSolicitado.toFixed(2).replace('.', ',')}`,
                 status: item.Status,
-                statusColor: Functions.mapStatusReembolsoToColor(item.Status),
                 dataEnvio: dayjs(item.DataEnvio).format('DD/MM/YYYY'),
                 acoes: true,
             }));

@@ -27,14 +27,7 @@ import { handleApiError } from 'utils/handleApiError';
 import CustomModal from 'components/CustomModal';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import { useLocation, useNavigate } from 'react-router-dom';
-
-interface Lancamento {
-    id: number;
-    beneficiario: string;
-    tipo: string;
-    data: string;
-    valor: string;
-}
+import { Lancamento } from 'types/lançamentos';
 
 interface FormValues {
     periodoSolicitacao: string;

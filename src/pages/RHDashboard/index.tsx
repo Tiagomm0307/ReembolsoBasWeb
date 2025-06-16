@@ -1,7 +1,6 @@
 // pages/HRDashboard.tsx
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { Typography } from '@mui/material';
 import DashboardLayout from '../../components/DashboardLayout';
 import HomeIcon from '@mui/icons-material/Home';
 import { WelcomeScreen, type QuickAction, type WelcomeCard } from '../../components/Layout/WelcomeScreen';
@@ -12,6 +11,7 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import { CadastroEmpregados } from './pages/CadastroEmpregados';
 import { ValidarReembolsos } from './pages/ValidarReembolsos';
 import { authService } from 'service/authService';
+import RelatoriosReembolso from './pages/RelatorioReembolso';
 
 const RHDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -24,7 +24,7 @@ const RHDashboard: React.FC = () => {
         { label: 'Cadastro Empregados', path: '/rh/cadastro-empregados', icon: <PersonAddIcon /> },
         { label: 'Aprovar/Validar Reembolso', path: '/rh/aprovar-validar-reembolso', icon: <DoneAllIcon /> },
         { label: 'Relatórios', path: '/rh/relatorios', icon: <TrendingUp /> },
-        { label: 'Biblioteca de Documentos', path: '/rh/relatorios', icon: <AutoStoriesIcon /> },
+        { label: 'Biblioteca de Documentos', path: '/rh/biblioteca-documentos', icon: <AutoStoriesIcon /> },
     ];
 
     const healthCards: WelcomeCard[] = [
@@ -90,7 +90,7 @@ const RHDashboard: React.FC = () => {
                 />
                 <Route path="cadastro-empregados" element={<CadastroEmpregados />} />
                 <Route path="aprovar-validar-reembolso" element={<ValidarReembolsos />} />
-                <Route path="reports" element={<Typography>Relatórios</Typography>} />
+                <Route path="relatorios" element={<RelatoriosReembolso />} />
             </Routes>
         </DashboardLayout>
     );

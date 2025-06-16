@@ -145,6 +145,7 @@ export function CadastroEmpregados() {
     const [openUploadModal, setOpenUploadModal] = useState(false);
     const [arquivo, setArquivo] = useState<File | null>(null);
     const [dados, setDados] = useState<EmpregadoPlanilha[]>([]);
+    const [search, setSearch] = useState('');
 
     // React Hook Form para edição
     const { handleSubmit: handleEditSubmit, control: controlEdit, reset: resetEdit } = useForm<FormEdit>();
@@ -189,10 +190,13 @@ export function CadastroEmpregados() {
         }
     }, [fetchTrigger, fetchEmpregados]);
 
-    const paginatedRows = rows.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
+    const filteredRows = rows.filter(empregado =>
+        empregado.nome.toLowerCase().includes(search.toLowerCase()) ||
+        empregado.matricula.toLowerCase().includes(search.toLowerCase())
     );
+
+    // Depois, aplique a paginação no resultado filtrado:
+    const paginatedRows = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     const handleChangePage = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => setPage(newPage);
 
@@ -365,8 +369,9 @@ export function CadastroEmpregados() {
                     fullWidth
                     size="small"
                     sx={{ mb: 2 }}
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
                 />
-
                 <DynamicTable
                     rows={paginatedRows}
                     columns={columns}
@@ -375,7 +380,7 @@ export function CadastroEmpregados() {
                     rowsPerPage={rowsPerPage}
                     handleChangePage={handleChangePage}
                     handleChangeRowsPerPage={handleChangeRowsPerPage}
-                    totalRegistros={rows.length}
+                    totalRegistros={filteredRows.length} // Para a paginação refletir o filtro
                     pagination={true}
                     loading={loading}
                     noRecordsToDisplay={'Nenhum empregado foi encontrado'}
